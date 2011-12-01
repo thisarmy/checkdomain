@@ -2,7 +2,7 @@
 
 import optfunc
 from optfunc import arghelp
-import dns.resolver
+import dns
 from dns.resolver import NXDOMAIN
 
 
@@ -33,6 +33,16 @@ def is_root_domain(domain):
     # assume everything else is a subdomain
     return False
 
+NXDOMAIN_ERROR = "%s does not resolve."
+TIMEOUT_ERROR = "A timeout error occurred while checking %s."
+DNS_ERROR = "A DNS error occurred while checking %s."
+IP_ERROR = "%s points to %s"
+CNAME_ERROR = "%s points to %s"
+CNAME_WARNING = "%s is a CNAME to %s. Root domains should be A records, not CNAMEs."
+WWW_IP_WARNING = "www.%s points to %s"
+WWW_A_WARNING = "www.%s is an A record. Ideally it would be a CNAME to %s."
+WWW_CNAME_WARNING = "www.%s points to %s"
+WWW_MISSING_WARNING = "'%s does not resolve.'"
 
 def get_domain_details(domain, force_root=False):
     # @ means root domain, ok?
@@ -45,6 +55,10 @@ def get_domain_details(domain, force_root=False):
     # will hold records['@'] = dict(type='A', address='107.20.228.0')
     records = {}
 
+    # things that re definitely wrong or just temporary errors that caused
+    # our checks itself to fail
+    errors = []
+
     # whatever we think is probably wrong. recommendations, you know.
     # (we'll probably be adding more elsewhere
     #  as we don't check everything here)
@@ -53,12 +67,30 @@ def get_domain_details(domain, force_root=False):
     for n, d in tocheck:
         try:
             answers = dns.resolver.query(domain)
+
+        # if there are errors with the root domain we don't also check the www.
+        # errors with the www. domain are just warnings.
         except NXDOMAIN:
             if n == '@':
-                # if the domain itself doesn't resolve it is a fatal error
-                return False
+                errors.append(NXDOMAIN_ERROR % (domain,))
+                break
             else:
-                warnings.append('%s does not resolve.' % (n,))
+                warnings.append(WWW_MISSING_WARNING % (d,))
+        except dns.exception.Timeout:
+            if n == '@':
+                errors.append(TIMEOUT_ERROR % (domain,))
+                break
+            else:
+                warnings.append(TIMEOUT_ERROR % (domain,))
+
+        except dns.exception.DNSException:
+            # catchall
+            if n == '@':
+                errors.append(DNS_ERROR % (domain,))
+                break
+            else:
+                warnings.append(DNS_ERROR % (domain,))
+
         else:
             answer = answers.response.answer[0]
             item = answer.items[0]
@@ -74,15 +106,7 @@ def get_domain_details(domain, force_root=False):
                     address=str(answers[0].address),
                     target=str(item.target))
 
-    return dict(warnings=warnings, records=records)
-
-NXDOMAIN_ERROR = "%s does not resolve."
-IP_ERROR = "%s points to %s"
-CNAME_ERROR = "%s points to %s"
-CNAME_WARNING = "%s is a CNAME to %s. Root domains should be A records, not CNAMEs."
-WWW_IP_WARNING = "www.%s points to %s"
-WWW_A_WARNING = "www.%s is an A record. Ideally it would be a CNAME to %s."
-WWW_CNAME_WARNING = "www.%s points to %s"
+    return dict(records=records, errors=errors, warnings=warnings)
 
 def find_domain_problems(domain, ips, cnames):
     force_root = False
@@ -94,11 +118,10 @@ def find_domain_problems(domain, ips, cnames):
 
     report = get_domain_details(domain, force_root=force_root)
 
-    warnings = []
-    errors = []
-    if report:
-        warnings = report['warnings']
+    errors = report['errors']
+    warnings = report['warnings']
 
+    if not errors:
         root = report['records']['@']
         if root['address'] not in ips:
             errors.append(IP_ERROR % (domain, root['address']))
@@ -130,12 +153,6 @@ def find_domain_problems(domain, ips, cnames):
                     if www['target'] not in cnames:
                         warnings.append(WWW_CNAME_WARNING % (
                             domain, www['target']))
-
-    else:
-        errors.append(NXDOMAIN_ERROR % (domain,))
-
-    report['warnings'] = warnings
-    report['errors'] = errors
 
     return report
 
