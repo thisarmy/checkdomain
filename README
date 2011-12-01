@@ -1,0 +1,36 @@
+checkdomain
+===========
+
+See if a domain is set up correctly.
+
+Checkdomain uses some heuristics to see if a domain is a "root" domain or a
+"subdomain". Root in this case means a domain like mydomain.com and subdomain
+means shop.mydomain.com. It is "www.-aware" too. That means it assumes that
+you're checking a root domain like mydomain.com it will also check to see if
+www.mydomain.com is pointing to the same place. It is smart enough not to do
+this for subdomains.
+
+When used from the command-line, checkdomain will print out the relevant
+records, errors and warnings. If a domain does not resolve to a correct IP
+address it will give you an error of some kind and warnings include using a
+CNAME on a root domain (which is technically not allowed and causes all sorts
+of problems when receiving email on that domain) or having the root domain and
+www. subdomain pointing to different places.
+
+Included are wrapper scripts for Tank and Ammo that double as examples.
+
+
+Usage
+-----
+
+    ./checkdomain.py --help
+    Usage: checkdomain.py -i ip1,ip1... -c cname1,cname2... <domain>
+
+    Options:
+      -h, --help            show this help message and exit
+      -i IPS, --ips=IPS     comma-delimited list of allowed A records
+      -c CNAMES, --cnames=CNAMES
+                            comma-delimited list of allowed CNAMEs
+
+
+
