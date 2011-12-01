@@ -5,7 +5,7 @@ See if a domain is set up correctly.
 
 Checkdomain uses some heuristics to see if a domain is a "root" domain or a
 "subdomain". Root in this case means a domain like mydomain.com and subdomain
-means shop.mydomain.com. It is "www.-aware" too. That means it assumes that
+means shop.mydomain.com. It is "www.-aware" too. That means it assumes that if
 you're checking a root domain like mydomain.com it will also check to see if
 www.mydomain.com is pointing to the same place. It is smart enough not to do
 this for subdomains.
@@ -33,4 +33,10 @@ Usage
                             comma-delimited list of allowed CNAMEs
 
 
+Requirements
+------------
 
+dnspython - http://www.dnspython.org/
+    In debian-based distros: sudo apt-get install python-dnspython
+Simon Willison's optfunc - http://simonwillison.net/2009/May/28/optfunc/
+    setup.py compatible fork here: https://github.com/lerouxb/optfunc
