@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-import dns.resolver
 import optfunc
 from optfunc import arghelp
+import dns.resolver
 from dns.resolver import NXDOMAIN
 
 
