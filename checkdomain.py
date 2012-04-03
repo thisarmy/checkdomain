@@ -132,7 +132,7 @@ def find_domain_problems(domain, ips, cnames):
                 # we already checked if it resolved
                 pass
             elif root['type'] == 'CNAME':
-                if root['target'] not in cnames:
+                if root['target'].rstrip('.') not in cnames:
                     errors.append(CNAME_ERROR % (domain, root['target']))
                 elif len(report['records'].keys()) > 1:
                     warnings.append(CNAME_WARNING % (domain, root['target']))
@@ -150,7 +150,7 @@ def find_domain_problems(domain, ips, cnames):
                     pass
 
                 elif www['type'] == 'CNAME':
-                    if www['target'] not in cnames:
+                    if www['target'].rstrip('.') not in cnames:
                         warnings.append(WWW_CNAME_WARNING % (
                             domain, www['target']))
 
